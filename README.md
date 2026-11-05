@@ -7,3 +7,6 @@ Proof-of-skill hiring platform that builds verified developer profiles from real
 
 **Francis Happy**
 > “First, solve the problem. Then, write the code.” — John Johnson
+
+**Maxwell Nvani**
+> "First, do it. Then, do it right. Then, do it fast." — Kent Beck
