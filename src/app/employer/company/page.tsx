@@ -10,6 +10,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { CompanyForm } from "@/components/company-form";
+import { CompanyLogoForm } from "@/components/company-logo-form";
 
 export const metadata: Metadata = {
   title: "Company profile | LaunchPad",
@@ -43,7 +44,7 @@ async function CompanyEditor() {
   const { data: company } = user
     ? await supabase
         .from("companies")
-        .select("name, website, description")
+        .select("name, website, description, logo_url")
         .eq("owner_id", user.id)
         .order("created_at")
         .limit(1)
@@ -54,14 +55,20 @@ async function CompanyEditor() {
     <div className="mt-10 grid grid-cols-1 gap-10">
       {!company && (
         <p className="rounded-xl bg-highlight-soft px-4 py-3 text-sm font-medium">
-          You haven&apos;t created a company profile yet. Add one before posting your first job.
+          You haven&apos;t created a company profile yet. Add one before posting your first job. You can upload a logo once it&apos;s saved.
         </p>
+      )}
+
+      {/* The logo can only be added once the company exists (issue #13). */}
+      {company && (
+        <section aria-label="Company logo" className="rounded-2xl border border-border bg-card p-5 sm:p-8">
+          <CompanyLogoForm name={company.name} logoUrl={company.logo_url} />
+        </section>
       )}
 
       <section aria-label="Edit company profile" className="rounded-2xl border border-border bg-card p-5 sm:p-8">
         <CompanyForm company={company} />
       </section>
-
     </div>
   );
 }
