@@ -1,21 +1,99 @@
 @import "tailwindcss";
 
+/*
+  LaunchPad brand theme.
+  Colors are defined once here as CSS variables, then exposed to Tailwind in
+  @theme below, so components use classes like `bg-primary` or `text-muted`
+  instead of hard-coded colors. Dark mode only swaps the variable values.
+
+  Palette: near-black ink, emerald green for actions and "verified", a deep
+  green for dark panels, and warm amber for small highlights. Flat colors,
+  no gradients.
+  Text/background pairs meet WCAG AA contrast (4.5:1 or more).
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #ffffff; /* page background */
+  --foreground: #0f1f1a; /* main text: near-black with a hint of green */
+  --surface: #f4f7f5; /* alternate section background */
+  --card: #ffffff; /* cards */
+  --muted: #4f5d58; /* secondary text */
+  --border: #e2e8e5; /* lines and card borders */
+  --panel: #062f25; /* dark panels (employer panel, final call to action) */
+
+  --primary: #047857; /* emerald: buttons and links */
+  --primary-hover: #065f46;
+  --primary-foreground: #ffffff;
+  --primary-text: #047857; /* emerald text on light backgrounds */
+  --primary-soft: #e8f6ef; /* light green panels */
+
+  --accent: #10b981; /* bright emerald: "verified" checks, bars, match rings */
+  --accent-text: #047857; /* green text on light backgrounds */
+  --accent-soft: #e8f6ef;
+
+  --highlight: #f5a524; /* amber: small highlights only */
+  --highlight-soft: #fff4dc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #07130f;
+    --foreground: #e3ece8;
+    --surface: #0b1a15;
+    --card: #10221c;
+    --muted: #9db0a8;
+    --border: #1f352d;
+    --panel: #04100c;
+
+    --primary: #047857;
+    --primary-hover: #059669;
+    --primary-foreground: #ffffff;
+    --primary-text: #6ee7b7;
+    --primary-soft: #0d2a20;
+
+    --accent: #34d399;
+    --accent-text: #6ee7b7;
+    --accent-soft: #0d2a20;
+
+    --highlight: #f5b03e;
+    --highlight-soft: #3a2a0a;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-panel: var(--panel);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
+  --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-highlight: var(--highlight);
+  --color-highlight-soft: var(--highlight-soft);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --font-sans: var(--font-jakarta);
+  --font-mono: var(--font-geist-mono);
+
+  /* A gentle entrance animation, used with `motion-safe:` so it is skipped
+     for people who turn on "reduce motion" in their device settings. */
+  --animate-rise: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
@@ -23,4 +101,18 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* A clear focus ring for keyboard users on every link, button, and input. */
+:focus-visible {
+  outline: 2px solid var(--primary-text);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Smooth scrolling for in-page links, unless reduce motion is on. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }

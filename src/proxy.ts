@@ -6,6 +6,7 @@
 //    pick a role at /onboarding first, and each role stays out of the other's pages.
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { dashboardPathFor } from "@/lib/roles";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -82,7 +83,7 @@ export async function proxy(request: NextRequest) {
 
     // A role can only be picked once, so users who have one skip onboarding.
     if (role && isOnboarding) {
-      return redirectWithCookies(dashboardFor(role));
+      return redirectWithCookies(dashboardPathFor(role));
     }
 
     // Each role stays out of the other's pages.
@@ -95,13 +96,6 @@ export async function proxy(request: NextRequest) {
   }
 
   return response;
-}
-
-// The home page for each role. Admins have no dashboard yet, so they go home.
-function dashboardFor(role: string) {
-  if (role === "candidate") return "/candidate/dashboard";
-  if (role === "employer") return "/employer/dashboard";
-  return "/";
 }
 
 export const config = {
