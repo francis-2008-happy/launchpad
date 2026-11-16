@@ -1,5 +1,5 @@
 # Continuous integration: checks every pull request (and every push to main)
-# by installing dependencies, running ESLint, and doing a production build.
+# by installing dependencies, running ESLint and the unit tests, and doing a production build.
 # A red X on a PR means something is broken; fix it before merging.
 name: CI
 
@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   lint-and-build:
-    name: Lint and build
+    name: Lint, test, and build
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -44,6 +44,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Unit tests
+        run: npm test
 
       - name: Build
         run: npm run build

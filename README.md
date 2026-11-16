@@ -19,6 +19,7 @@ Other commands:
 ```bash
 npm run lint    # check code style
 npm run build   # production build (must pass before opening a PR)
+npm test        # unit tests (Jest) for the logic in src/lib/
 ```
 
 ## Project structure
