@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Tailwind's `dark:` classes follow the theme toggle too, not only the device setting. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
 /*
   LaunchPad brand theme.
   Colors are defined once here as CSS variables, then exposed to Tailwind in
@@ -12,6 +24,7 @@
   Text/background pairs meet WCAG AA contrast (4.5:1 or more).
 */
 :root {
+  color-scheme: light;
   --background: #ffffff; /* page background */
   --foreground: #0f1f1a; /* main text: near-black with a hint of green */
   --surface: #f4f7f5; /* alternate section background */
@@ -34,8 +47,41 @@
   --highlight-soft: #fff4dc;
 }
 
+/*
+  Dark theme (issue #28). It is used when:
+    - the visitor picked "Dark" with the theme toggle (data-theme="dark" on <html>), or
+    - they left it on "System" and their device is set to dark mode.
+  Picking "Light" (data-theme="light") keeps the light colors even on a dark device.
+  The same values are listed twice because CSS cannot share one block between
+  a selector and a media query.
+*/
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #07130f;
+  --foreground: #e3ece8;
+  --surface: #0b1a15;
+  --card: #10221c;
+  --muted: #9db0a8;
+  --border: #1f352d;
+  --panel: #04100c;
+
+  --primary: #047857;
+  --primary-hover: #059669;
+  --primary-foreground: #ffffff;
+  --primary-text: #6ee7b7;
+  --primary-soft: #0d2a20;
+
+  --accent: #34d399;
+  --accent-text: #6ee7b7;
+  --accent-soft: #0d2a20;
+
+  --highlight: #f5b03e;
+  --highlight-soft: #3a2a0a;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --background: #07130f;
     --foreground: #e3ece8;
     --surface: #0b1a15;

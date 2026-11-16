@@ -118,3 +118,47 @@ export function RepoIcon({ className }: IconProps) {
     </Svg>
   );
 }
+
+// ---------- Theme toggle and mobile menu (issue #28) ----------
+
+export function SunIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </Svg>
+  );
+}
+
+export function MoonIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />
+    </Svg>
+  );
+}
+
+export function MonitorIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <path d="M8 20h8M12 16v4" />
+    </Svg>
+  );
+}
+
+export function MenuIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </Svg>
+  );
+}
+
+export function CloseIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </Svg>
+  );
+}
