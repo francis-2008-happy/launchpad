@@ -1,4 +1,4 @@
-// The "post a job" form (issue #14).
+// The job form, used to post a job (issue #14) and to edit one (issue #15).
 // A Client Component so it can show field errors and a "Posting..." state
 // without a full page reload. useActionState runs the server action and gives
 // back its result after each submit.
@@ -6,22 +6,33 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { createJob, type JobFormState } from "@/app/employer/jobs/new/actions";
+import type { JobFormState } from "@/app/employer/jobs/actions";
 import { SkillPicker, type SkillOption } from "@/components/skill-picker";
-import { JOB_DESCRIPTION_MAX, JOB_LOCATION_MAX, JOB_SKILLS_MAX, JOB_TITLE_MAX } from "@/lib/validation/job";
+import { JOB_DESCRIPTION_MAX, JOB_LOCATION_MAX, JOB_SKILLS_MAX, JOB_TITLE_MAX, type JobInput } from "@/lib/validation/job";
 
 const initialState: JobFormState = { status: "idle" };
 
 const inputClass =
   "mt-2 block w-full rounded-xl border bg-card px-4 py-3 text-base outline-none transition placeholder:text-muted/70 focus:border-primary focus:ring-2 focus:ring-primary/20";
 
-const emptyValues = { title: "", description: "", location: "", isRemote: false, skillIds: [] as string[] };
+const emptyValues: JobInput = { title: "", description: "", location: "", isRemote: false, skillIds: [] };
 
-export function JobForm({ skills }: { skills: SkillOption[] }) {
-  const [state, formAction, isPending] = useActionState(createJob, initialState);
+type JobFormProps = {
+  skills: SkillOption[];
+  // The server action to run: createJob, or updateJob bound to a job id.
+  action: (previous: JobFormState, formData: FormData) => Promise<JobFormState>;
+  // The job's current details when editing. Empty when posting a new job.
+  initialValues?: JobInput;
+  submitLabel: string;
+  pendingLabel: string;
+};
+
+export function JobForm({ skills, action, initialValues = emptyValues, submitLabel, pendingLabel }: JobFormProps) {
+  const [state, formAction, isPending] = useActionState(action, initialState);
   const errors = state.errors ?? {};
-  // After a failed submit, keep what was typed. After success, start fresh.
-  const values = state.values ?? emptyValues;
+  // After a submit, show the values the server sent back. When posting a new
+  // job succeeds it sends none, so the form starts fresh for the next job.
+  const values = state.values ?? (state.status === "success" ? emptyValues : initialValues);
   const borderFor = (field: keyof typeof errors) => (errors[field] ? "border-red-500" : "border-border");
 
   return (
@@ -129,7 +140,7 @@ export function JobForm({ skills }: { skills: SkillOption[] }) {
         disabled={isPending}
         className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 py-3 text-base font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
-        {isPending ? "Posting..." : "Post job"}
+        {isPending ? pendingLabel : submitLabel}
       </button>
     </form>
   );
