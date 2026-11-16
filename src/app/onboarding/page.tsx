@@ -7,7 +7,7 @@ export default function OnboardingPage() {
       <div className="w-full max-w-md text-center">
         <h1 className="text-3xl font-bold tracking-tight">Welcome to LaunchPad</h1>
         <p className="mt-4 text-lg text-foreground/70">
-          To get started, please tell us how you'll be using the platform.
+          To get started, please tell us how you will be using the platform.
         </p>
 
         <form action={completeOnboarding} className="mt-8 space-y-4 text-left">
