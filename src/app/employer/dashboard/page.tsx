@@ -1,5 +1,6 @@
 // Employer dashboard. Job listings and applicants will be added here later
-// (#15 manage jobs, Sprint 3 applicants). For now it links to the company profile.
+// (#15 manage jobs, Sprint 3 applicants). For now it links to the company
+// profile and the "post a job" page.
 //
 // The company card reads the session cookie to load the employer's company, so
 // it sits inside <Suspense> and the rest of the page can still be pre-rendered.
@@ -29,6 +30,22 @@ export default function EmployerDashboard() {
               <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </span>
             <span className="mt-1 block text-sm text-muted">Create or edit the company candidates see on your jobs.</span>
+          </span>
+        </Link>
+
+        <Link
+          href="/employer/jobs/new"
+          className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 transition hover:border-primary sm:p-6"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <BriefcaseIcon className="h-6 w-6" />
+          </span>
+          <span className="min-w-0">
+            <span className="flex items-center gap-1 font-bold">
+              Post a job
+              <ArrowRightIcon className="h-4 w-4 transition group-hover:translate-x-0.5" />
+            </span>
+            <span className="mt-1 block text-sm text-muted">Describe the role and the skills it needs.</span>
           </span>
         </Link>
       </div>
