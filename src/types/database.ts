@@ -56,6 +56,55 @@ export type Database = {
           },
         ]
       }
+      candidate_skills: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          repository_id: string
+          skill_id: string
+          source: Database["public"]["Enums"]["skill_source"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          repository_id: string
+          skill_id: string
+          source: Database["public"]["Enums"]["skill_source"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          repository_id?: string
+          skill_id?: string
+          source?: Database["public"]["Enums"]["skill_source"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_skills_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_skills_repository_id_profile_id_fkey"
+            columns: ["repository_id", "profile_id"]
+            isOneToOne: false
+            referencedRelation: "repositories"
+            referencedColumns: ["id", "profile_id"]
+          },
+          {
+            foreignKeyName: "candidate_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
@@ -213,6 +262,65 @@ export type Database = {
         }
         Relationships: []
       }
+      repositories: {
+        Row: {
+          created_at: string
+          description: string | null
+          featured_description: string | null
+          github_id: number
+          id: string
+          imported_at: string
+          is_featured: boolean
+          name: string
+          primary_language: string | null
+          profile_id: string
+          pushed_at: string | null
+          stars: number
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          featured_description?: string | null
+          github_id: number
+          id?: string
+          imported_at?: string
+          is_featured?: boolean
+          name: string
+          primary_language?: string | null
+          profile_id: string
+          pushed_at?: string | null
+          stars?: number
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          featured_description?: string | null
+          github_id?: number
+          id?: string
+          imported_at?: string
+          is_featured?: boolean
+          name?: string
+          primary_language?: string | null
+          profile_id?: string
+          pushed_at?: string | null
+          stars?: number
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repositories_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skills: {
         Row: {
           category: Database["public"]["Enums"]["skill_category"]
@@ -250,6 +358,7 @@ export type Database = {
         | "rejected"
       job_status: "open" | "closed"
       skill_category: "language" | "framework" | "tool" | "practice"
+      skill_source: "language" | "dependency" | "tests"
       user_role: "candidate" | "employer" | "admin"
     }
     CompositeTypes: {
@@ -387,6 +496,7 @@ export const Constants = {
       ],
       job_status: ["open", "closed"],
       skill_category: ["language", "framework", "tool", "practice"],
+      skill_source: ["language", "dependency", "tests"],
       user_role: ["candidate", "employer", "admin"],
     },
   },
