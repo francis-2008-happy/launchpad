@@ -1,7 +1,8 @@
-// components/CopyrightYear.tsx
-import { connection } from "next/server";
+// src/components/CopyrightYear.tsx
+import { cacheLife } from "next/cache";
 
 export async function CopyrightYear() {
-  await connection();
+  "use cache";
+  cacheLife("max"); // Cache indefinitely; it only changes once a year
   return <>{new Date().getFullYear()}</>;
 }
