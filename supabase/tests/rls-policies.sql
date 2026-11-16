@@ -28,9 +28,13 @@ begin
     (emp2,  'emp2@test.local',  'authenticated', 'authenticated'),
     (adm,   'adm@test.local',   'authenticated', 'authenticated'),
     (fresh, 'fresh@test.local', 'authenticated', 'authenticated');
+  -- Profiles are created automatically by the sign-up trigger (#6); set their roles here.
   insert into public.profiles (id, role, github_username) values
     (cand, 'candidate', 't_cand'), (emp, 'employer', 't_emp'), (emp2, 'employer', 't_emp2'),
-    (adm, 'admin', 't_adm'), (fresh, null, 't_fresh');
+    (adm, 'admin', 't_adm'), (fresh, null, 't_fresh')
+  on conflict (id) do update set role = excluded.role, github_username = excluded.github_username;
+  select count(*) into n from public.profiles where id in (cand, emp, emp2, adm, fresh);
+  r := r || case when n = 5 then E'\nPASS ' else E'\nFAIL ' end || 'sign-up trigger created a profile for each new user (' || n || ')';
   insert into public.companies (owner_id, name) values (emp, 'Acme') returning id into c1;
   insert into public.companies (owner_id, name) values (emp2, 'Globex') returning id into c2;
   insert into public.jobs (company_id, title, description) values (c1, 'Open job', 'd') returning id into j_open;

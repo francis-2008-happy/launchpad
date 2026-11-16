@@ -1,5 +1,7 @@
-// Home page: a simple placeholder until sign in (#6) and the dashboards are built.
+// Home page: a simple landing page until the dashboards are built.
 // This is a Server Component (no "use client"), because it has no state or browser code.
+import Link from "next/link";
+
 export default function HomePage() {
   return (
     <main className="flex flex-1 items-center justify-center px-6 py-16">
@@ -11,14 +13,12 @@ export default function HomePage() {
           verified from your real GitHub code.
         </p>
 
-        {/* Placeholder button. GitHub sign in is wired up in issue #6. */}
-        <button
-          type="button"
-          disabled
-          className="mt-8 w-full rounded-lg bg-foreground px-6 py-3 font-medium text-background opacity-60 sm:w-auto"
+        <Link
+          href="/sign-in"
+          className="mt-8 inline-block w-full rounded-lg bg-foreground px-6 py-3 font-medium text-background transition hover:opacity-90 sm:w-auto"
         >
-          Sign in with GitHub (coming soon)
-        </button>
+          Sign in with GitHub
+        </Link>
       </div>
     </main>
   );
