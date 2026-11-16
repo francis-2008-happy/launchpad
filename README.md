@@ -22,6 +22,22 @@ npm run build   # production build (must pass before opening a PR)
 npm test        # unit tests (Jest) for the logic in src/lib/
 ```
 
+## Sample data
+
+The skills list (about 70 languages, frameworks, tools, and practices) is added by a migration, so every environment has it.
+
+To add sample jobs for testing job search, job details, and matching:
+
+1. Sign in to LaunchPad as an employer and create your company profile.
+2. Open `supabase/seed/sample-jobs.sql` and change `employer_github` to your GitHub username.
+3. Run:
+
+   ```bash
+   npx supabase@3.1.0 db query --remote --yes -f supabase/seed/sample-jobs.sql
+   ```
+
+This adds 7 jobs (6 open, 1 closed) with required skills to your company. Running it again skips jobs that already exist.
+
 ## Project structure
 
 ```
