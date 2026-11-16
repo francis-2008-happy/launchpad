@@ -1,0 +1,49 @@
+# Continuous integration: checks every pull request (and every push to main)
+# by installing dependencies, running ESLint, and doing a production build.
+# A red X on a PR means something is broken; fix it before merging.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# If new commits are pushed to the same PR, cancel the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-build:
+    name: Lint and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # The build needs these variables to exist. They are placeholders: the build
+    # does not connect to Supabase. Real values live in .env.local and in Vercel.
+    env:
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
