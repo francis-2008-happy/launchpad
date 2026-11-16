@@ -48,6 +48,7 @@ export function MatchRing({ value, size = 56 }: { value: number; size?: number }
           stroke="var(--accent)"
           strokeWidth="3.5"
           strokeLinecap="round"
+          className="fill-ring" // fills up when it scrolls into view (issue #29)
           strokeDasharray={`${(value / 100) * circumference} ${circumference}`}
         />
       </svg>
@@ -103,7 +104,8 @@ export function SkillProfileMockup({ className = "" }: { className?: string }) {
                 <span className="text-xs text-muted">{skill.repos} repos</span>
               </div>
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface">
-                <div className="h-full rounded-full bg-primary" style={{ width: `${skill.level}%` }} />
+                {/* grow-bar: grows from zero when it scrolls into view (issue #29) */}
+                <div className="grow-bar h-full rounded-full bg-primary" style={{ width: `${skill.level}%` }} />
               </div>
             </li>
           ))}

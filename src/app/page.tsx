@@ -10,7 +10,6 @@
 // the #WOCinTech Chat collection; Arjun is by litoon dev; Daniel is by
 // The Connected Narrative.
 import Image from "next/image";
-import Link from "next/link";
 import { Suspense } from "react";
 import { PrimaryCta, PrimaryCtaSkeleton } from "@/components/landing/primary-cta";
 import {
@@ -21,6 +20,8 @@ import {
 } from "@/components/landing/product-mockups";
 import { CandidateDashboardScreen, LaptopFrame } from "@/components/landing/device-mockups";
 import { ArrowRightIcon, CheckIcon } from "@/components/icons";
+import { AudienceSwitch } from "@/components/landing/audience-switch";
+import { Reveal } from "@/components/landing/reveal";
 
 // Shared width and side padding for every section.
 const container = "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8";
@@ -29,34 +30,49 @@ export default function HomePage() {
   return (
     <main className="overflow-x-clip">
       <Hero />
-      <HowItWorks />
-      <Audiences />
-      <ProfileSpotlight />
-      <Faq />
-      <FinalCta />
+      {/* Each section below fades in as it scrolls into view (issue #29). */}
+      <Reveal>
+        <HowItWorks />
+      </Reveal>
+      <Reveal>
+        <Audiences />
+      </Reveal>
+      <Reveal>
+        <ProfileSpotlight />
+      </Reveal>
+      <Reveal>
+        <Faq />
+      </Reveal>
+      <Reveal>
+        <FinalCta />
+      </Reveal>
     </main>
   );
 }
 
 // ---------- Hero ----------
+// The hero has two versions, one for developers and one for employers, and a
+// switch at the top to change between them (issue #29). Both are built here on
+// the server; <AudienceSwitch> only chooses which one to show.
 
 type PersonKey = keyof typeof people;
 
-// A photo of a person with a small label on top, like a profile preview.
-function PhotoTile({
-  person,
-  aspect,
-  label,
-  labelPosition = "bottom",
-}: {
+type Tile = {
   person: PersonKey;
   aspect: string;
   label: React.ReactNode;
+  detail: string; // extra words that slide out of the label on hover
   labelPosition?: "top" | "bottom";
-}) {
+};
+
+// A photo of a person with a small label on top, like a profile preview.
+// On hover it lifts slightly and the label shows more detail (issue #29).
+function PhotoTile({ person, aspect, label, detail, labelPosition = "bottom" }: Tile) {
   const p = people[person];
   return (
-    <div className={`relative overflow-hidden rounded-2xl bg-surface ${aspect}`}>
+    <div
+      className={`group relative overflow-hidden rounded-2xl bg-surface transition duration-300 hover:shadow-[0_18px_40px_-18px_rgba(15,31,26,0.45)] motion-safe:hover:-translate-y-1 ${aspect}`}
+    >
       <Image
         src={p.photo}
         alt={`${p.name}, a developer, at a laptop`}
@@ -69,50 +85,128 @@ function PhotoTile({
         className={`absolute left-2 ${labelPosition === "top" ? "top-2" : "bottom-2"} inline-flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-panel shadow-sm sm:left-3 sm:text-xs`}
       >
         {label}
+        {/* Hidden until hover: grows open from zero width. */}
+        <span className="max-w-0 overflow-hidden whitespace-nowrap font-medium text-muted transition-[max-width] duration-500 group-hover:max-w-48">
+          &nbsp;· {detail}
+        </span>
       </span>
     </div>
   );
 }
 
-function Hero() {
+const check = <CheckIcon className="h-3.5 w-3.5 text-accent-text" />;
+const dot = <span className="h-2 w-2 rounded-full bg-accent" />;
+
+// Developers see verified skills; employers see match scores for the same people.
+const tiles: Record<"developer" | "employer", [Tile[], Tile[]]> = {
+  developer: [
+    [
+      { person: "arjun", aspect: "aspect-[4/5]", label: <>{check} React · 6 repos</>, detail: "chat-app, budget-tracker" },
+      { person: "sofia", aspect: "aspect-square", label: <>{check} PostgreSQL</>, detail: "3 repos" },
+    ],
+    [
+      { person: "maya", aspect: "aspect-square", labelPosition: "top", label: <>{dot} 92% match</>, detail: "Frontend Engineer" },
+      { person: "daniel", aspect: "aspect-[4/5]", label: <>{check} TypeScript · 4 repos</>, detail: "api-gateway" },
+    ],
+  ],
+  employer: [
+    [
+      { person: "arjun", aspect: "aspect-[4/5]", label: <>{dot} 87% match</>, detail: "React, Node, Docker" },
+      { person: "sofia", aspect: "aspect-square", label: <>{dot} 81% match</>, detail: "SQL, Python" },
+    ],
+    [
+      { person: "maya", aspect: "aspect-square", labelPosition: "top", label: <>{dot} 92% match</>, detail: "4 of 5 skills" },
+      { person: "daniel", aspect: "aspect-[4/5]", label: <>{dot} 74% match</>, detail: "Vue, TypeScript" },
+    ],
+  ],
+};
+
+function PhotoCollage({ audience }: { audience: "developer" | "employer" }) {
+  const [left, right] = tiles[audience];
   return (
-    <section className={`${container} grid grid-cols-1 items-center gap-12 pt-10 pb-16 sm:pt-14 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:pt-20 lg:pb-24`}>
+    <div className="relative isolate">
+      <div aria-hidden="true" className="absolute inset-y-8 -right-4 left-10 -z-10 rounded-[2rem] bg-primary-soft sm:-right-8" />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="mt-10 space-y-3 sm:space-y-4">
+          {left.map((tile) => (
+            <PhotoTile key={tile.person} {...tile} />
+          ))}
+        </div>
+        <div className="space-y-3 sm:space-y-4">
+          {right.map((tile) => (
+            <PhotoTile key={tile.person} {...tile} />
+          ))}
+        </div>
+      </div>
+      {/* Employers also see the ranked applicant list, floating over the photos. */}
+      {audience === "employer" && (
+        <ApplicantsMockup className="relative z-10 mx-2 -mt-28 sm:mx-auto sm:max-w-sm" />
+      )}
+    </div>
+  );
+}
+
+// The text and buttons for one audience.
+const heroCopy = {
+  developer: {
+    badge: "For junior and self-taught developers",
+    before: "Get hired for the code you’ve ",
+    highlight: "already written.",
+    text: "LaunchPad turns your GitHub into a verified skill profile. Employers see what you’ve actually built, and you see exactly why you match each job.",
+    ctaLabel: "Sign in with GitHub",
+    secondary: { href: "#for-employers", label: "I’m hiring" },
+    points: ["No résumé upload", "Every skill linked to real code", "AI explains, people decide"],
+  },
+  employer: {
+    badge: "For hiring teams",
+    before: "Hire developers on ",
+    highlight: "proven skills.",
+    text: "Post a job with the skills you need. LaunchPad ranks applicants by the skills verified in their GitHub code and explains every match, so you can shortlist with confidence.",
+    ctaLabel: "Sign in to post a job",
+    secondary: { href: "#employers", label: "See what you get" },
+    points: ["Applicants ranked by verified skills", "Open the code behind any skill", "AI explains, you decide"],
+  },
+};
+
+function HeroContent({ audience }: { audience: "developer" | "employer" }) {
+  const copy = heroCopy[audience];
+  return (
+    <div className="mt-8 grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
       {/* Text */}
-      <div className="motion-safe:animate-rise">
+      <div>
         <p className="inline-flex items-center gap-2 rounded-full bg-highlight-soft px-3 py-1 text-sm font-semibold text-foreground">
           <span className="h-2 w-2 rounded-full bg-highlight" />
-          For junior and self-taught developers
+          {copy.badge}
         </p>
 
         <h1 className="mt-6 text-[clamp(2.4rem,4.2vw+1rem,4.25rem)] leading-[1.05] font-extrabold tracking-tight text-balance">
-          Get hired for the code you&apos;ve{" "}
+          {copy.before}
           <span className="relative isolate whitespace-nowrap">
             {/* A marker-style highlight behind the words */}
             <span aria-hidden="true" className="absolute inset-x-0 bottom-[0.08em] -z-10 h-[0.35em] rounded-sm bg-highlight/60" />
-            already written.
+            {copy.highlight}
           </span>
         </h1>
 
-        <p className="mt-6 max-w-xl text-lg text-pretty text-muted sm:text-xl">
-          LaunchPad turns your GitHub into a verified skill profile. Employers see what you&apos;ve actually built, and
-          you see exactly why you match each job.
-        </p>
+        <p className="mt-6 max-w-xl text-lg text-pretty text-muted sm:text-xl">{copy.text}</p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Suspense fallback={<PrimaryCtaSkeleton />}>
-            <PrimaryCta />
+            <PrimaryCta signedOutLabel={copy.ctaLabel} />
           </Suspense>
-          <Link
-            href="#employers"
+          {/* A plain <a> (not <Link>) for in-page "#..." links: the browser then fires a
+              "hashchange" event, which the audience switch listens for. */}
+          <a
+            href={copy.secondary.href}
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-base font-semibold transition hover:border-primary hover:text-primary-text"
           >
-            I&apos;m hiring
+            {copy.secondary.label}
             <ArrowRightIcon className="h-4 w-4" />
-          </Link>
+          </a>
         </div>
 
         <ul className="mt-8 grid gap-2 text-sm text-muted sm:flex sm:flex-wrap sm:gap-x-6">
-          {["No résumé upload", "Every skill linked to real code", "AI explains, people decide"].map((item) => (
+          {copy.points.map((item) => (
             <li key={item} className="flex items-center gap-1.5">
               <CheckIcon className="h-4 w-4 text-accent-text" />
               {item}
@@ -122,52 +216,16 @@ function Hero() {
       </div>
 
       {/* Photo collage: real people, each with a verified skill or match label. */}
-      <div className="relative isolate motion-safe:animate-rise motion-safe:[animation-delay:120ms]">
-        <div aria-hidden="true" className="absolute inset-y-8 -right-4 left-10 -z-10 rounded-[2rem] bg-primary-soft sm:-right-8" />
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="mt-10 space-y-3 sm:space-y-4">
-            <PhotoTile
-              person="arjun"
-              aspect="aspect-[4/5]"
-              label={
-                <>
-                  <CheckIcon className="h-3.5 w-3.5 text-accent-text" /> React · 6 repos
-                </>
-              }
-            />
-            <PhotoTile
-              person="sofia"
-              aspect="aspect-square"
-              label={
-                <>
-                  <CheckIcon className="h-3.5 w-3.5 text-accent-text" /> PostgreSQL
-                </>
-              }
-            />
-          </div>
-          <div className="space-y-3 sm:space-y-4">
-            <PhotoTile
-              person="maya"
-              aspect="aspect-square"
-              labelPosition="top"
-              label={
-                <>
-                  <span className="h-2 w-2 rounded-full bg-accent" /> 92% match
-                </>
-              }
-            />
-            <PhotoTile
-              person="daniel"
-              aspect="aspect-[4/5]"
-              label={
-                <>
-                  <CheckIcon className="h-3.5 w-3.5 text-accent-text" /> TypeScript · 4 repos
-                </>
-              }
-            />
-          </div>
-        </div>
-      </div>
+      <PhotoCollage audience={audience} />
+    </div>
+  );
+}
+
+function Hero() {
+  return (
+    // The id lets every "I'm hiring" link (href="#for-employers") scroll here and switch to the employer view.
+    <section id="for-employers" className={`${container} scroll-mt-20 pt-8 pb-16 sm:pt-12 lg:pt-16 lg:pb-24`}>
+      <AudienceSwitch developer={<HeroContent audience="developer" />} employer={<HeroContent audience="employer" />} />
     </section>
   );
 }
@@ -416,13 +474,14 @@ function FinalCta() {
             <Suspense fallback={<PrimaryCtaSkeleton variant="light" />}>
               <PrimaryCta variant="light" />
             </Suspense>
-            <Link
-              href="#employers"
+            {/* Plain <a> so the hero's audience switch hears the "#for-employers" change. */}
+            <a
+              href="#for-employers"
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/25 px-6 py-3 font-semibold text-white transition hover:border-white"
             >
               I&apos;m hiring
               <ArrowRightIcon className="h-4 w-4" />
-            </Link>
+            </a>
           </div>
         </div>
       </div>
