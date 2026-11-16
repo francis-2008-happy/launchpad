@@ -30,7 +30,8 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="bg-background text-foreground antialiased min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1">{children}</main>
+        {/* A div, not <main>: each page renders its own <main> element. */}
+        <div className="flex flex-1 flex-col">{children}</div>
         <Footer />
       </body>
     </html>

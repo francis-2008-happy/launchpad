@@ -9,7 +9,8 @@ export default function Header() {
           LaunchPad
         </Link>
         
-        <div className="hidden md:flex md:items-center md:gap-6">
+        {/* Visible on all screen sizes; spacing and button text shrink on phones. */}
+        <div className="flex items-center gap-4 md:gap-6">
           <Link
             href="/"
             className="text-sm font-medium text-foreground/70 transition-colors hover:text-foreground"
@@ -19,9 +20,9 @@ export default function Header() {
           <button
             type="button"
             disabled
-            className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background opacity-60 cursor-not-allowed"
+            className="rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background opacity-60 cursor-not-allowed sm:px-4"
           >
-            Sign In (Coming Soon)
+            Sign In<span className="hidden sm:inline"> (Coming Soon)</span>
           </button>
         </div>
       </nav>
