@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <Header />
         {/* tabIndex={-1} lets the skip link move keyboard focus here. */}
-        <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+        <div id="main-content" tabIndex={-1} className="flex flex-1 scroll-mt-20 flex-col outline-none">
           {children}
         </div>
         <Footer />
