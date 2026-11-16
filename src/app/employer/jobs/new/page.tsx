@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { JobForm } from "@/components/job-form";
+import { createJob } from "@/app/employer/jobs/actions";
 
 export const metadata: Metadata = {
   title: "Post a job | LaunchPad",
@@ -63,7 +64,7 @@ async function JobEditor() {
 
   return (
     <section aria-label="Job details" className="mt-10 rounded-2xl border border-border bg-card p-5 sm:p-8">
-      <JobForm skills={skills ?? []} />
+      <JobForm skills={skills ?? []} action={createJob} submitLabel="Post job" pendingLabel="Posting..." />
     </section>
   );
 }
