@@ -22,6 +22,7 @@ import { CandidateDashboardScreen, LaptopFrame } from "@/components/landing/devi
 import { ArrowRightIcon, CheckIcon } from "@/components/icons";
 import { AudienceSwitch } from "@/components/landing/audience-switch";
 import { Reveal } from "@/components/landing/reveal";
+import { GitHubPreview } from "@/components/landing/github-preview";
 
 // Shared width and side padding for every section.
 const container = "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8";
@@ -33,6 +34,9 @@ export default function HomePage() {
       {/* Each section below fades in as it scrolls into view (issue #29). */}
       <Reveal>
         <HowItWorks />
+      </Reveal>
+      <Reveal>
+        <TryIt />
       </Reveal>
       <Reveal>
         <Audiences />
@@ -294,6 +298,23 @@ function HowItWorks() {
             <CandidateDashboardScreen />
           </LaptopFrame>
         </figure>
+      </div>
+    </section>
+  );
+}
+
+// ---------- Try it with a GitHub username (issue #34) ----------
+
+function TryIt() {
+  return (
+    <section id="try-it" className="scroll-mt-20 py-20 sm:py-24">
+      <div className={`${container} grid grid-cols-1 gap-10 lg:grid-cols-[1fr_1.6fr] lg:gap-16`}>
+        <SectionHeading
+          eyebrow="Try it now"
+          title="See what your GitHub says about you"
+          text="Type any GitHub username for a quick preview of the languages and projects behind it. No sign in needed."
+        />
+        <GitHubPreview />
       </div>
     </section>
   );

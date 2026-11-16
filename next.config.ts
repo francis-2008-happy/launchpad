@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
     // Company logos are stored in Supabase Storage's public buckets (issue #13).
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
+      // GitHub profile photos in the landing page's GitHub preview (issue #34).
+      { protocol: "https", hostname: "avatars.githubusercontent.com" },
     ],
   },
   experimental: {
