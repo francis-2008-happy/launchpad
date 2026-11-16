@@ -88,7 +88,7 @@ export function CandidateDashboardScreen() {
             <p className="mb-1 font-semibold">Top verified skills</p>
             <div className="flex h-[7em] items-end gap-[6%]">
               {[92, 88, 74, 61, 55, 48].map((height, i) => (
-                <div key={i} className={`flex-1 rounded-t-sm ${i === 0 ? "bg-primary" : "bg-primary/35"}`} style={{ height: `${height}%` }} />
+                <div key={i} className={`grow-column flex-1 rounded-t-sm ${i === 0 ? "bg-primary" : "bg-primary/35"}`} style={{ height: `${height}%` }} />
               ))}
             </div>
           </div>

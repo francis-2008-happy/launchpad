@@ -18,7 +18,14 @@ const styles: Record<Variant, string> = {
 const base =
   "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-base font-semibold transition sm:w-auto";
 
-export async function PrimaryCta({ variant = "primary" }: { variant?: Variant }) {
+// signedOutLabel lets the employer version of the hero say "Sign in to post a job" (issue #29).
+export async function PrimaryCta({
+  variant = "primary",
+  signedOutLabel = "Sign in with GitHub",
+}: {
+  variant?: Variant;
+  signedOutLabel?: string;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -37,7 +44,7 @@ export async function PrimaryCta({ variant = "primary" }: { variant?: Variant })
   return (
     <Link href="/sign-in" className={`${base} ${styles[variant]}`}>
       <GitHubIcon className="h-5 w-5" />
-      Sign in with GitHub
+      {signedOutLabel}
     </Link>
   );
 }

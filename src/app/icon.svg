@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The LaunchPad logo mark (same as LogoMark in src/components/icons.tsx), used as the browser tab icon. -->
+  <rect width="32" height="32" rx="8" fill="#047857"/>
+  <path d="M16 7l6 7h-4v6h-4v-6h-4l6-7z" fill="#ffffff"/>
+  <rect x="9" y="22.5" width="14" height="2.5" rx="1.25" fill="#f5a524"/>
+</svg>

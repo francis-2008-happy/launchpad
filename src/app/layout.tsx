@@ -10,19 +10,43 @@ import { themeInitScript } from "@/lib/theme";
 const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const description = "Proof-of-skill hiring platform that builds verified developer profiles from real GitHub code.";
+
 export const metadata: Metadata = {
+  // Share images need full links (https://...), so Next.js needs the site's address.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "LaunchPad",
-  description: "Proof-of-skill hiring platform that builds verified developer profiles from real GitHub code.",
+  description,
+  // Link previews on WhatsApp, Slack, LinkedIn, and X (issue #29). The image
+  // itself comes from opengraph-image.tsx and twitter-image.tsx.
+  openGraph: {
+    title: "LaunchPad: get hired for the code you've already written",
+    description,
+    siteName: "LaunchPad",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LaunchPad: get hired for the code you've already written",
+    description,
+  },
 };
+
+// Runs before the page is shown: applies the saved theme (issue #28) and adds a
+// "js" class to <html>, which the scroll animations use (issue #29). Without
+// JavaScript the class is missing, so content is never hidden waiting for an
+// animation that cannot run.
+const initScript = `${themeInitScript}
+document.documentElement.classList.add("js");`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // suppressHydrationWarning: the theme script below may add data-theme to <html>
+    // suppressHydrationWarning: the script below may add data-theme and a class to <html>
     // before React loads, which is expected and not a bug.
     <html lang="en" className={`${jakarta.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
         {/* Applies the saved light/dark theme before the page is shown, so there is no flash (issue #28). */}
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: initScript }} />
       </head>
       <body className="bg-background text-foreground antialiased min-h-screen flex flex-col">
         {/* Skip link (issue #28): the first thing keyboard users reach with Tab.
