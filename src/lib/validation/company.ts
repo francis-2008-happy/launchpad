@@ -69,3 +69,46 @@ function isHttpUrl(value: string): boolean {
     return false;
   }
 }
+
+// ---------- Company logo (issue #13) ----------
+
+export const LOGO_MAX_BYTES = 2 * 1024 * 1024; // 2 MB, the same limit as the storage bucket
+
+export type LogoType = { mimeType: "image/png" | "image/jpeg" | "image/webp"; extension: "png" | "jpg" | "webp" };
+
+// Works out the real image type from the first bytes of the file (its "magic
+// number"). The type the browser reports is just a label the user's computer
+// chose, so a renamed file could lie about it. These bytes cannot.
+export function detectLogoType(bytes: Uint8Array): LogoType | null {
+  const startsWith = (signature: number[], offset = 0) =>
+    signature.every((byte, i) => bytes[offset + i] === byte);
+
+  if (startsWith([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
+    return { mimeType: "image/png", extension: "png" };
+  }
+  if (startsWith([0xff, 0xd8, 0xff])) {
+    return { mimeType: "image/jpeg", extension: "jpg" };
+  }
+  // WebP files start with "RIFF", four size bytes, then "WEBP".
+  if (startsWith([0x52, 0x49, 0x46, 0x46]) && startsWith([0x57, 0x45, 0x42, 0x50], 8)) {
+    return { mimeType: "image/webp", extension: "webp" };
+  }
+  return null;
+}
+
+export type LogoValidation = { ok: true; type: LogoType } | { ok: false; error: string };
+
+// Checks an uploaded logo: it must exist, be 2 MB or smaller, and really be a PNG, JPEG, or WebP image.
+export function validateLogo(size: number, firstBytes: Uint8Array): LogoValidation {
+  if (size === 0) {
+    return { ok: false, error: "Choose an image to upload." };
+  }
+  if (size > LOGO_MAX_BYTES) {
+    return { ok: false, error: "The logo must be 2 MB or smaller." };
+  }
+  const type = detectLogoType(firstBytes);
+  if (!type) {
+    return { ok: false, error: "The logo must be a PNG, JPEG, or WebP image." };
+  }
+  return { ok: true, type };
+}
