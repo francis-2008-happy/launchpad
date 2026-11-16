@@ -1,7 +1,9 @@
 // Runs before every page request (Next.js 16 calls this "proxy"; it used to be "middleware").
-// Its only job right now: keep the Supabase login session fresh. Supabase sessions expire,
-// and Server Components cannot save cookies, so the refreshed session is saved here.
-// Issue #9 (protected pages) can add role-based redirects to this file.
+// It does two jobs:
+// 1. Keeps the Supabase login session fresh. Sessions expire, and Server Components
+//    cannot save cookies, so the refreshed session is saved here.
+// 2. Protects pages by role (#9): signed-out users cannot open dashboards, new users
+//    pick a role at /onboarding first, and each role stays out of the other's pages.
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -33,9 +35,73 @@ export async function proxy(request: NextRequest) {
 
   // Checks the session and refreshes it if it has expired.
   // Do not put code between createServerClient and this call.
-  await supabase.auth.getClaims();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub ?? null;
+
+  // Redirect to another page, keeping any refreshed session cookies.
+  const redirectWithCookies = (pathname: string, search = "") => {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname;
+    url.search = search;
+    const redirect = NextResponse.redirect(url);
+
+    // Copy each cookie with its options (expiry, httpOnly, secure, ...).
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+
+    // Copy only the no-cache headers Supabase sets on a refresh, so a response
+    // with a session cookie is never cached. Other headers are internal to Next.js.
+    ["cache-control", "expires", "pragma"].forEach((name) => {
+      const value = response.headers.get(name);
+      if (value) redirect.headers.set(name, value);
+    });
+
+    return redirect;
+  };
+
+  const pathname = request.nextUrl.pathname;
+  const isProtected = pathname.startsWith("/candidate") || pathname.startsWith("/employer");
+  const isOnboarding = pathname.startsWith("/onboarding");
+
+  // Signed-out users cannot open dashboards.
+  if (!userId && isProtected) {
+    return redirectWithCookies("/sign-in", `?next=${encodeURIComponent(pathname)}`);
+  }
+
+  if (userId) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+    const role = profile?.role ?? null;
+
+    // New users (no role yet) go to onboarding.
+    if (!role && !isOnboarding) {
+      return redirectWithCookies("/onboarding");
+    }
+
+    // A role can only be picked once, so users who have one skip onboarding.
+    if (role && isOnboarding) {
+      return redirectWithCookies(dashboardFor(role));
+    }
+
+    // Each role stays out of the other's pages.
+    if (role === "candidate" && pathname.startsWith("/employer")) {
+      return redirectWithCookies("/candidate/dashboard");
+    }
+    if (role === "employer" && pathname.startsWith("/candidate")) {
+      return redirectWithCookies("/employer/dashboard");
+    }
+  }
 
   return response;
+}
+
+// The home page for each role. Admins have no dashboard yet, so they go home.
+function dashboardFor(role: string) {
+  if (role === "candidate") return "/candidate/dashboard";
+  if (role === "employer") return "/employer/dashboard";
+  return "/";
 }
 
 export const config = {
