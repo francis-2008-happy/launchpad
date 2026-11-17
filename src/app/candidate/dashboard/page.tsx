@@ -4,10 +4,11 @@
 //
 // The repositories are read from our database (saved by the last import), not
 // from GitHub, so this page loads fast and does not use GitHub's rate limit.
+import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { ImportReposButton } from "@/components/import-repos-button";
-import { RepoIcon } from "@/components/icons";
+import { ArrowRightIcon, RepoIcon } from "@/components/icons";
 
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -53,6 +54,15 @@ async function RepositoriesCard() {
               ? `${list.length} imported · Last imported ${dateFormat.format(new Date(lastImported))}`
               : "Import your public repositories to start your verified skill profile."}
           </p>
+          {list.length > 0 && (
+            <Link
+              href="/candidate/profile"
+              className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-primary-text hover:underline"
+            >
+              View your skill profile
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          )}
         </div>
         <ImportReposButton hasImported={list.length > 0} />
       </div>
