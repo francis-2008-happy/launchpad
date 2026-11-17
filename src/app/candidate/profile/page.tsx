@@ -134,7 +134,7 @@ async function ProfileContent() {
       {repoCount > 0 && (
         <section aria-labelledby="choose-featured-heading" className="mt-12 rounded-3xl border border-border bg-card p-5 sm:p-8">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="choose-featured-heading" className="text-xl font-bold">
+            <h2 id="choose-featured-heading" className="scroll-mt-24 text-xl font-bold">
               Choose your featured projects
             </h2>
             <span className="text-sm text-muted">
