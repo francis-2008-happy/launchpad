@@ -14,7 +14,7 @@
 
 do $seed$
 declare
-  employer_github text := 'francis-2008-happy';  -- <-- change this to your GitHub username
+  employer_github text := 'pearlrhema';  -- <-- change this to your GitHub username
   company uuid;
   new_job uuid;
   added int := 0;
