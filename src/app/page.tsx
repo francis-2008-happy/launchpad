@@ -10,6 +10,7 @@
 // the #WOCinTech Chat collection; Arjun is by litoon dev; Daniel is by
 // The Connected Narrative.
 import Image from "next/image";
+import Link from "next/link";
 import { Suspense } from "react";
 import { PrimaryCta, PrimaryCtaSkeleton } from "@/components/landing/primary-cta";
 import {
@@ -159,6 +160,7 @@ const heroCopy = {
     text: "LaunchPad turns your GitHub into a verified skill profile. Employers see what you’ve actually built, and you see exactly why you match each job.",
     ctaLabel: "Sign in with GitHub",
     secondary: { href: "#for-employers", label: "I’m hiring" },
+    browseJobs: true, // "Just looking? Browse open jobs" link (issue #67)
     points: ["No résumé upload", "Every skill linked to real code", "AI explains, people decide"],
   },
   employer: {
@@ -168,6 +170,7 @@ const heroCopy = {
     text: "Post a job with the skills you need. LaunchPad ranks applicants by the skills verified in their GitHub code and explains every match, so you can shortlist with confidence.",
     ctaLabel: "Sign in to post a job",
     secondary: { href: "#employers", label: "See what you get" },
+    browseJobs: false,
     points: ["Applicants ranked by verified skills", "Open the code behind any skill", "AI explains, you decide"],
   },
 };
@@ -208,6 +211,16 @@ function HeroContent({ audience }: { audience: "developer" | "employer" }) {
             <ArrowRightIcon className="h-4 w-4" />
           </a>
         </div>
+
+        {/* Developers can look at jobs before signing in (issue #67). */}
+        {copy.browseJobs && (
+          <p className="mt-4 text-sm text-muted">
+            Just looking?{" "}
+            <Link href="/jobs" className="inline-flex min-h-11 items-center font-semibold text-primary-text underline-offset-4 hover:underline">
+              Browse open jobs
+            </Link>
+          </p>
+        )}
 
         <ul className="mt-8 grid gap-2 text-sm text-muted sm:flex sm:flex-wrap sm:gap-x-6">
           {copy.points.map((item) => (

@@ -11,7 +11,7 @@ export type ChecklistStep = {
   title: string;
   description: string;
   done: boolean;
-  comingSoon?: boolean; // the feature is not built yet
+  optional?: boolean; // we cannot track it, so it is not counted and is never "next"
 };
 
 export function buildChecklist({ repoCount, skillCount, featuredCount }: ChecklistInput) {
@@ -45,11 +45,11 @@ export function buildChecklist({ repoCount, skillCount, featuredCount }: Checkli
       title: "Browse jobs",
       description: "Find jobs that match your verified skills.",
       done: false,
-      comingSoon: true, // job search is issue #43
+      optional: true, // we do not record whether someone has browsed jobs
     },
   ];
 
-  const available = steps.filter((step) => !step.comingSoon);
+  const available = steps.filter((step) => !step.optional);
   const doneCount = available.filter((step) => step.done).length;
   // The first step that is not done and can be done now.
   const next = available.find((step) => !step.done)?.id ?? null;

@@ -5,7 +5,7 @@ describe("buildChecklist", () => {
   it("starts with only the account step done and import next", () => {
     const result = buildChecklist({ repoCount: 0, skillCount: 0, featuredCount: 0 });
     expect(result.doneCount).toBe(1);
-    expect(result.total).toBe(4); // "Browse jobs" is not counted while it is coming soon
+    expect(result.total).toBe(4); // "Browse jobs" is optional, so it is not counted
     expect(result.next).toBe("import");
   });
 
@@ -20,10 +20,12 @@ describe("buildChecklist", () => {
     expect(result.next).toBeNull();
   });
 
-  it("marks job search as coming soon and never done", () => {
-    const jobs = buildChecklist({ repoCount: 1, skillCount: 1, featuredCount: 1 }).steps.find((s) => s.id === "jobs")!;
-    expect(jobs.comingSoon).toBe(true);
+  it("keeps browsing jobs optional: never counted and never the next step", () => {
+    const result = buildChecklist({ repoCount: 1, skillCount: 1, featuredCount: 1 });
+    const jobs = result.steps.find((s) => s.id === "jobs")!;
+    expect(jobs.optional).toBe(true);
     expect(jobs.done).toBe(false);
+    expect(result.next).toBeNull();
   });
 });
 
