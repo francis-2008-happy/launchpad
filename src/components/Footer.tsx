@@ -12,6 +12,7 @@ const columns = [
   {
     title: "Explore",
     links: [
+      { href: "/jobs", label: "Browse jobs" },
       { href: "/#how-it-works", label: "How it works" },
       { href: "/#try-it", label: "Try it with GitHub" },
       { href: "/#faq", label: "FAQ" },

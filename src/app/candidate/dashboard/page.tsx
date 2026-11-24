@@ -199,6 +199,7 @@ async function Dashboard() {
 const stepLinks: Partial<Record<ChecklistStepId, { href: string; label: string }>> = {
   review: { href: "/candidate/profile", label: "Open your profile" },
   feature: { href: "/candidate/profile#choose-featured-heading", label: "Choose projects" },
+  jobs: { href: "/jobs", label: "Browse jobs" },
 };
 
 function Checklist({
@@ -233,6 +234,9 @@ function Checklist({
         {steps.map((step, index) => {
           const isNext = step.id === next;
           const link = stepLinks[step.id];
+          // The next step gets the main button. Optional steps (browse jobs) always
+          // show a quieter button, since they are never "next".
+          const showLink = link && (isNext || step.optional);
           return (
             <li
               key={step.id}
@@ -254,9 +258,9 @@ function Checklist({
               <div className="min-w-0 flex-1">
                 <p className={`font-semibold ${step.done ? "text-muted line-through decoration-1" : ""}`}>
                   {step.title}
-                  {step.comingSoon && (
-                    <span className="ml-2 rounded-full bg-surface px-2 py-0.5 align-middle text-xs font-semibold text-muted no-underline">
-                      Coming soon
+                  {step.optional && (
+                    <span className="ml-2 rounded-full bg-surface px-2 py-0.5 align-middle text-xs font-semibold text-muted">
+                      Any time
                     </span>
                   )}
                 </p>
@@ -266,10 +270,14 @@ function Checklist({
                     <ImportReposButton hasImported={hasRepos} />
                   </div>
                 )}
-                {isNext && link && (
+                {showLink && (
                   <Link
                     href={link.href}
-                    className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary-hover"
+                    className={`mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-xl px-4 text-sm font-semibold ${
+                      isNext
+                        ? "bg-primary text-primary-foreground hover:bg-primary-hover"
+                        : "border border-border hover:border-primary hover:text-primary-text"
+                    }`}
                   >
                     {link.label}
                     <ArrowRightIcon className="h-4 w-4" />

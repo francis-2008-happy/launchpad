@@ -49,7 +49,7 @@ export function MobileMenu({ links, userNav }: { links: NavLink[]; userNav: Reac
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <button
         ref={buttonRef}
         type="button"

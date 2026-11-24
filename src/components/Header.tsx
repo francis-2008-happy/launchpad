@@ -7,9 +7,11 @@ import { LogoMark } from "@/components/icons";
 import { MobileMenu } from "@/components/mobile-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-// Links to the landing page sections. Shown in the header from `md` up, and in
-// the mobile menu on phones (issue #28).
+// Links shown in the header from `lg` up, and in the mobile menu on phones and
+// tablets (issues #28, #67). "Browse jobs" opens job search (issue #67); the rest are landing
+// page sections.
 const navLinks = [
+  { href: "/jobs", label: "Browse jobs" },
   { href: "/#how-it-works", label: "How it works" },
   { href: "/#candidates", label: "For candidates" },
   { href: "/#employers", label: "For employers" },
@@ -62,8 +64,8 @@ export default function Header() {
           LaunchPad
         </Link>
 
-        {/* Links to landing page sections, shown from tablet size up. */}
-        <ul className="hidden items-center gap-8 text-sm font-medium text-muted md:flex">
+        {/* Shown from laptop size up. On tablets four links do not fit on one line. */}
+        <ul className="hidden items-center gap-6 text-sm font-medium whitespace-nowrap text-muted lg:flex xl:gap-8">
           {navLinks.map((link) => (
             <li key={link.href}>
               <Link href={link.href} className="transition hover:text-foreground">
@@ -73,8 +75,8 @@ export default function Header() {
           ))}
         </ul>
 
-        {/* From `md` up: sign in / sign out and the theme toggle sit in the header. */}
-        <div className="hidden items-center gap-3 md:flex lg:gap-4">
+        {/* From `lg` up: sign in / sign out and the theme toggle sit in the header. */}
+        <div className="hidden items-center gap-4 lg:flex">
           {/* This Suspense boundary is what prevents the cookies() error */}
           <Suspense fallback={<div className="h-11 w-24 animate-pulse rounded-lg bg-surface" />}>
             <UserNav />
@@ -82,7 +84,7 @@ export default function Header() {
           <ThemeToggle />
         </div>
 
-        {/* On phones they move into the menu, with the section links (issue #28). */}
+        {/* On phones and tablets they move into the menu, with the links (issue #28). */}
         <MobileMenu
           links={navLinks}
           userNav={
