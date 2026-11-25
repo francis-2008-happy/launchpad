@@ -9,7 +9,7 @@
 // can see. Only the final save uses the admin client (see src/lib/supabase/admin.ts).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateText } from "@/lib/ai/gemini";
-import { MATCH_EXPLANATION_SYSTEM, matchExplanationPrompt } from "@/lib/ai/prompts";
+import { MATCH_EXPLANATION_SYSTEM, RESUME_SUMMARY_SYSTEM, matchExplanationPrompt, resumeSummaryPrompt } from "@/lib/ai/prompts";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -94,6 +94,47 @@ export async function analyzeMatch(jobId: string, candidateId: string): Promise<
     throw new MatchError("We couldn't save the analysis. Please try again.");
   }
   return toAnalysis(data, false);
+}
+
+// Drafts a resume summary for this job from the saved analysis (issue #78).
+// Only the candidate can do this, and only from an up-to-date analysis, so the
+// summary is based on the skills they have proven right now. The prompt lets the
+// AI mention only those proven skills.
+export async function draftResumeSummary(jobId: string, candidateId: string): Promise<string> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.id !== candidateId) throw new MatchError("Only the candidate can draft their own summary.");
+
+  const [saved, inputs] = await Promise.all([
+    loadSavedAnalysis(supabase, jobId, candidateId),
+    loadInputs(supabase, jobId, candidateId),
+  ]);
+  if (!saved || !inputs) throw new MatchError("Analyze your match first.");
+  if (saved.skills_fingerprint !== skillsFingerprint(inputs.required, inputs.evidence)) {
+    throw new MatchError("Your skills or this job changed. Refresh your analysis first.");
+  }
+  const strengths = saved.strengths as Strength[];
+  if (strengths.length === 0) {
+    throw new MatchError("Prove at least one of this job's skills in your repositories first.");
+  }
+
+  const summary = await generateText({
+    system: RESUME_SUMMARY_SYSTEM,
+    prompt: resumeSummaryPrompt({ jobTitle: inputs.jobTitle, jobDescription: inputs.jobDescription, strengths }),
+  });
+
+  // Cached with the analysis, so it shows again next time without calling the AI.
+  const { error } = await createAdminClient()
+    .from("match_analyses")
+    .update({ summary })
+    .eq("id", saved.id);
+  if (error) {
+    console.error("Failed to save resume summary:", error);
+    throw new MatchError("We couldn't save the summary. Please try again.");
+  }
+  return summary;
 }
 
 // The signed-in user must be the candidate, or own the job the candidate applied to.

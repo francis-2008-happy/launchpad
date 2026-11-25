@@ -1,4 +1,5 @@
-// "Analyze my match" panel on the job details page (issue #77).
+// "Analyze my match" panel on the job details page (issue #77), with the
+// tailored resume summary (issue #78).
 // A Client Component so it can show "Analyzing..." while the server action runs,
 // and the new result afterwards without reloading the page.
 //
@@ -6,8 +7,8 @@
 // candidates see their last result straight away, without calling the AI.
 "use client";
 
-import { useActionState } from "react";
-import { analyzeMyMatch, type MatchState } from "@/app/jobs/[id]/match-actions";
+import { useActionState, useState } from "react";
+import { analyzeMyMatch, draftMySummary, type MatchState, type SummaryState } from "@/app/jobs/[id]/match-actions";
 import type { MatchAnalysis } from "@/lib/matching/analyze";
 import { matchLabel } from "@/lib/matching/label";
 
@@ -61,6 +62,10 @@ export function MatchAnalysisPanel({ jobId, saved }: { jobId: string; saved: Mat
       )}
 
       {analysis && <MatchResult analysis={analysis} />}
+      {/* key: a new analysis clears the old summary, so start this part fresh. */}
+      {analysis && !analysis.isStale && analysis.strengths.length > 0 && (
+        <ResumeSummary key={analysis.updatedAt} jobId={jobId} saved={analysis.summary} />
+      )}
 
       <p className="mt-6 border-t border-border pt-4 text-xs text-muted">
         AI explains the match to help you understand it. It does not make hiring decisions; the employer does.
@@ -141,6 +146,72 @@ function MatchResult({ analysis }: { analysis: MatchAnalysis }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// "Draft a summary" (issue #78): an AI-drafted resume summary for this job that
+// only mentions skills proven in the candidate's code, with a Copy button.
+function ResumeSummary({ jobId, saved }: { jobId: string; saved: string | null }) {
+  const [state, formAction, isPending] = useActionState(
+    draftMySummary.bind(null, jobId),
+    { status: "idle" } satisfies SummaryState,
+  );
+  const [copied, setCopied] = useState(false);
+  const summary = state.summary ?? saved;
+
+  async function copy() {
+    if (!summary) return;
+    try {
+      await navigator.clipboard.writeText(summary);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can be blocked (for example on http). The text is still selectable.
+    }
+  }
+
+  return (
+    <div className="mt-6 rounded-xl bg-surface p-4 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-bold">Tailored resume summary</h3>
+          <p className="mt-1 text-xs text-muted">Uses only the skills proven in your repositories.</p>
+        </div>
+        <form action={formAction} className="shrink-0">
+          <button
+            type="submit"
+            disabled={isPending}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-border bg-card px-5 text-sm font-semibold transition hover:border-primary hover:text-primary-text disabled:cursor-wait disabled:opacity-70 sm:w-auto"
+          >
+            {isPending ? "Drafting..." : summary ? "Redraft" : "Draft a summary"}
+          </button>
+        </form>
+      </div>
+
+      {!isPending && state.status === "error" && (
+        <p role="alert" className="mt-3 text-sm font-medium text-red-600">
+          {state.message}
+        </p>
+      )}
+
+      {summary && (
+        <div className="mt-4">
+          <p className="rounded-lg border border-border bg-card p-4 text-sm leading-7">{summary}</p>
+          <div className="mt-2 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={copy}
+              className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-primary-text hover:underline"
+            >
+              Copy
+            </button>
+            <span role="status" className="text-xs text-muted">
+              {copied ? "Copied to clipboard" : "Review and edit it before you use it."}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
