@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { CompanyLogo } from "@/components/company-logo";
+import { MatchAnalysisPanel } from "@/components/match-analysis";
+import { getMatchAnalysis } from "@/lib/matching/analyze";
 
 export const metadata: Metadata = {
   title: "Job details | LaunchPad",
@@ -195,6 +197,9 @@ async function JobDetails({ params }: JobDetailsPageProps) {
         )}
       </section>
 
+      {/* AI match analysis (#77) */}
+      <MatchSection jobId={job.id} />
+
       {/* Company profile */}
       <section className="rounded-2xl border border-border bg-card p-5 sm:p-8">
         <h2 className="text-xl font-bold">
@@ -257,6 +262,36 @@ async function JobDetails({ params }: JobDetailsPageProps) {
 
     </div>
   );
+}
+
+// "Analyze my match" for candidates (#77). Signed-out visitors get a sign-in
+// prompt, and employers see nothing. Only the saved analysis is read here;
+// the AI runs only when the candidate clicks the button.
+async function MatchSection({ jobId }: { jobId: string }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <section className="rounded-2xl border border-border bg-card p-5 sm:p-8">
+        <h2 className="text-xl font-bold">How well do you match?</h2>
+        <p className="mt-2 text-sm text-muted">
+          <Link href="/sign-in" className="font-semibold text-primary-text hover:underline">
+            Sign in with GitHub
+          </Link>{" "}
+          to compare this job with the skills proven in your repositories.
+        </p>
+      </section>
+    );
+  }
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "candidate") return null;
+
+  const saved = await getMatchAnalysis(jobId, user.id);
+  return <MatchAnalysisPanel jobId={jobId} saved={saved} />;
 }
 
 // Loading placeholder while job information is retrieved.
