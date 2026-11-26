@@ -103,21 +103,20 @@ async function checkAccess(supabase: Supabase, jobId: string, candidateId: strin
   } = await supabase.auth.getUser();
   if (!user) throw new MatchError("Please sign in first.");
 
+  // A candidate analyzing their own match.
   if (user.id === candidateId) {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role !== "candidate") throw new MatchError("Only candidates can analyze their match.");
-    return;
+    if (profile?.role === "candidate") return;
   }
 
-  // RLS only shows an application to the candidate or the employer who owns the job,
-  // so if we can see it here, this user is that employer.
-  const { data: application } = await supabase
-    .from("applications")
-    .select("id")
-    .eq("job_id", jobId)
-    .eq("candidate_id", candidateId)
-    .maybeSingle();
-  if (!application) throw new MatchError("You can only analyze candidates who applied to your jobs.");
+  // Otherwise: an employer who owns this job, reviewing someone who applied to it.
+  const [{ data: job }, { data: application }] = await Promise.all([
+    supabase.from("jobs").select("company:companies(owner_id)").eq("id", jobId).maybeSingle(),
+    supabase.from("applications").select("id").eq("job_id", jobId).eq("candidate_id", candidateId).maybeSingle(),
+  ]);
+  if (job?.company?.owner_id !== user.id || !application) {
+    throw new MatchError("You can only analyze candidates who applied to your jobs.");
+  }
 }
 
 type Inputs = { jobTitle: string; jobDescription: string; required: RequiredSkill[]; evidence: Evidence[] };
