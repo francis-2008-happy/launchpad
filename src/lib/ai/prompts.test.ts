@@ -1,4 +1,4 @@
-import { MAX_DESCRIPTION_CHARS, matchExplanationPrompt } from "./prompts";
+import { MAX_DESCRIPTION_CHARS, matchExplanationPrompt, resumeSummaryPrompt } from "./prompts";
 
 const base = {
   jobTitle: "Frontend Developer",
@@ -26,5 +26,13 @@ describe("matchExplanationPrompt", () => {
     const prompt = matchExplanationPrompt({ ...base, jobDescription: "x".repeat(MAX_DESCRIPTION_CHARS + 500) });
     expect(prompt).toContain(`${"x".repeat(MAX_DESCRIPTION_CHARS)}…`);
     expect(prompt).not.toContain("x".repeat(MAX_DESCRIPTION_CHARS + 1));
+  });
+});
+
+describe("resumeSummaryPrompt", () => {
+  it("lists only the proven skills with the repositories that prove them", () => {
+    const prompt = resumeSummaryPrompt(base);
+    expect(prompt).toContain("- React (repositories: a, b)");
+    expect(prompt).not.toContain("Docker");
   });
 });
