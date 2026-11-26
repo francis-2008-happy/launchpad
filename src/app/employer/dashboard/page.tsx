@@ -1,6 +1,6 @@
 // Employer dashboard: links to the company profile and "post a job", and lists
 // the employer's jobs with edit, close, and reopen actions (issue #15).
-// Applicants will be added here in Sprint 3.
+// Each job links to its applicants, with the applicant count (issue #71).
 //
 // The parts that load data read the session cookie, so they sit inside
 // <Suspense> and the rest of the page can still be pre-rendered.
@@ -111,7 +111,7 @@ async function JobsList() {
   const { data: jobs } = company
     ? await supabase
         .from("jobs")
-        .select("id, title, location, is_remote, status, created_at, job_skills(skills(name))")
+        .select("id, title, location, is_remote, status, created_at, job_skills(skills(name)), applications(count)")
         .eq("company_id", company.id)
         .order("created_at", { ascending: false })
     : { data: null };
@@ -148,6 +148,8 @@ async function JobsList() {
           {allJobs.map((job) => {
             const isOpen = job.status === "open";
             const skillNames = job.job_skills.flatMap((jobSkill) => (jobSkill.skills ? [jobSkill.skills.name] : []));
+            // applications(count) returns [{ count: n }]; RLS counts only this employer's applicants.
+            const applicantCount = job.applications[0]?.count ?? 0;
             const details = [job.location, job.is_remote ? "Remote" : null, `Posted ${dateFormat.format(new Date(job.created_at))}`]
               .filter(Boolean)
               .join(" · ");
@@ -172,7 +174,13 @@ async function JobsList() {
                     <p className="mt-1 text-sm text-muted">{details}</p>
                   </div>
 
-                  <div className="flex shrink-0 gap-2">
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <Link
+                      href={`/employer/jobs/${job.id}/applicants`}
+                      className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover sm:flex-none"
+                    >
+                      Applicants ({applicantCount})
+                    </Link>
                     <Link
                       href={`/employer/jobs/${job.id}/edit`}
                       className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold transition hover:border-primary hover:text-primary-text sm:flex-none"
