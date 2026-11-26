@@ -22,6 +22,27 @@ npm run build   # production build (must pass before opening a PR)
 npm test        # unit tests (Jest) for the logic in src/lib/
 ```
 
+## End-to-end application flow
+
+The Playwright test uses synthetic candidate and employer accounts only. Create
+two test accounts in your development Supabase project, choose roles for them,
+and create an open test job owned by the employer.
+
+Log in in two separate browser profiles, save each Playwright storage state,
+then run:
+
+```bash
+npx playwright install chromium
+PLAYWRIGHT_CANDIDATE_STORAGE=./test-data/candidate.json \
+PLAYWRIGHT_EMPLOYER_STORAGE=./test-data/employer.json \
+PLAYWRIGHT_TEST_JOB_ID=<synthetic-job-id> \
+npm run test:e2e
+```
+
+On Windows PowerShell, set the variables with `$env:NAME = "value"` before
+running `npm run test:e2e`. Set `PLAYWRIGHT_BASE_URL` to test a deployed
+environment instead of starting the local development server.
+
 ## Sample data
 
 The skills list (about 70 languages, frameworks, tools, and practices) is added by a migration, so every environment has it.
