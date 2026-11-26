@@ -4,12 +4,18 @@
 // Access: proxy.ts keeps non-employers out of /employer, the ownership check
 // below shows "not found" for other companies' jobs, and Row Level Security
 // only returns applications (and applicants' skills) for the employer's own jobs.
+//
+// Ranking (issue #79): ?sort=match orders applicants by their cached match score.
+// The score explains how well proven skills fit the job; the employer decides.
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { AnalyzeApplicantButton } from "@/components/analyze-applicant-button";
+import { oneLine, parseSortOrder, sortApplicants, type SortOrder } from "@/lib/applicants/ranking";
 import { topSkillsByCandidate } from "@/lib/applicants/top-skills";
+import { matchLabel } from "@/lib/matching/label";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
@@ -29,9 +35,12 @@ const STAGE_LABELS: Record<Stage, string> = {
 
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
-export default function ApplicantsPage({ params }: PageProps) {
+export default function ApplicantsPage({ params, searchParams }: PageProps) {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
       <Link
@@ -41,14 +50,15 @@ export default function ApplicantsPage({ params }: PageProps) {
         ← Back to dashboard
       </Link>
       <Suspense fallback={<ApplicantsSkeleton />}>
-        <Applicants params={params} />
+        <Applicants params={params} searchParams={searchParams} />
       </Suspense>
     </main>
   );
 }
 
-async function Applicants({ params }: PageProps) {
+async function Applicants({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const sort = parseSortOrder((await searchParams).sort);
   const supabase = await createClient();
   const {
     data: { user },
@@ -69,27 +79,44 @@ async function Applicants({ params }: PageProps) {
     .eq("job_id", job.id)
     .order("created_at", { ascending: false });
 
-  const applicants = (applications ?? []).flatMap((application) =>
-    application.candidate ? [{ ...application, candidate: application.candidate }] : [],
-  );
-
-  // Every applicant's skill evidence in one query, then the top 5 for each.
-  const candidateIds = applicants.map((a) => a.candidate.id);
-  const { data: evidence } = candidateIds.length
-    ? await supabase
-        .from("candidate_skills")
-        .select("profile_id, repository_id, skill:skills(name)")
-        .in("profile_id", candidateIds)
-    : { data: [] };
+  // Every applicant's skill evidence and cached match analysis, one query each.
+  const candidateIds = (applications ?? []).flatMap((a) => (a.candidate ? [a.candidate.id] : []));
+  const [{ data: evidence }, { data: analyses }] = candidateIds.length
+    ? await Promise.all([
+        supabase.from("candidate_skills").select("profile_id, repository_id, skill:skills(name)").in("profile_id", candidateIds),
+        supabase.from("match_analyses").select("candidate_id, score, explanation").eq("job_id", job.id),
+      ])
+    : [{ data: [] }, { data: [] }];
   const topSkills = topSkillsByCandidate(evidence ?? []);
+  const analysisFor = new Map((analyses ?? []).map((a) => [a.candidate_id, a]));
+
+  const applicants = sortApplicants(
+    (applications ?? []).flatMap((application) => {
+      if (!application.candidate) return [];
+      const analysis = analysisFor.get(application.candidate.id);
+      return [
+        {
+          ...application,
+          candidate: application.candidate,
+          appliedAt: application.created_at,
+          score: analysis?.score ?? null,
+          explanation: analysis?.explanation ?? null,
+        },
+      ];
+    }),
+    sort,
+  );
 
   return (
     <div className="mt-6">
       <p className="text-sm font-semibold text-primary-text">{job.status === "open" ? "Open job" : "Closed job"}</p>
       <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">{job.title}</h1>
-      <p className="mt-3 text-lg text-muted">
-        {applicants.length} {applicants.length === 1 ? "applicant" : "applicants"}
-      </p>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-lg text-muted">
+          {applicants.length} {applicants.length === 1 ? "applicant" : "applicants"}
+        </p>
+        {applicants.length > 1 && <SortLinks jobId={job.id} current={sort} />}
+      </div>
 
       {applicants.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-dashed border-border bg-surface px-6 py-12 text-center">
@@ -100,7 +127,7 @@ async function Applicants({ params }: PageProps) {
         </div>
       ) : (
         <ul className="mt-8 grid grid-cols-1 gap-4">
-          {applicants.map(({ id: applicationId, stage, created_at, candidate }) => {
+          {applicants.map(({ id: applicationId, stage, created_at, candidate, score, explanation }) => {
             const name = candidate.full_name || candidate.github_username || "Unnamed candidate";
             const skills = topSkills.get(candidate.id) ?? [];
             return (
@@ -147,6 +174,22 @@ async function Applicants({ params }: PageProps) {
                   </div>
                 </div>
 
+                {/* Match score (#79): cached analysis, or a button to run one. */}
+                <div className="mt-4 flex flex-col gap-2 rounded-xl bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
+                  {score !== null ? (
+                    <p className="min-w-0 text-sm">
+                      <span className="font-bold tabular-nums text-primary-text">{score}/100</span>
+                      <span className="font-semibold"> · {matchLabel(score)}</span>
+                      {explanation && <span className="block text-muted sm:inline"> {oneLine(explanation)}</span>}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted">Not analyzed yet</p>
+                  )}
+                  <div className="shrink-0">
+                    <AnalyzeApplicantButton jobId={job.id} candidateId={candidate.id} analyzed={score !== null} />
+                  </div>
+                </div>
+
                 {skills.length > 0 ? (
                   <ul aria-label={`${name}'s top verified skills`} className="mt-4 flex flex-wrap gap-1.5">
                     {skills.map((skill) => (
@@ -167,7 +210,38 @@ async function Applicants({ params }: PageProps) {
           })}
         </ul>
       )}
+
+      {applicants.length > 0 && (
+        <p className="mt-6 text-xs text-muted">
+          Match scores compare each applicant&apos;s proven skills with this job&apos;s required skills, and AI explains
+          them. The score helps you decide who to review first; you make the hiring decision.
+        </p>
+      )}
     </div>
+  );
+}
+
+// "Newest" / "Best match" toggle. Plain links, so the sort order is in the URL.
+function SortLinks({ jobId, current }: { jobId: string; current: SortOrder }) {
+  const options: { value: SortOrder; label: string }[] = [
+    { value: "newest", label: "Newest" },
+    { value: "match", label: "Best match" },
+  ];
+  return (
+    <nav aria-label="Sort applicants" className="flex rounded-xl border border-border bg-card p-1">
+      {options.map((option) => (
+        <Link
+          key={option.value}
+          href={`/employer/jobs/${jobId}/applicants${option.value === "match" ? "?sort=match" : ""}`}
+          aria-current={current === option.value ? "page" : undefined}
+          className={`inline-flex min-h-10 items-center rounded-lg px-4 text-sm font-semibold transition ${
+            current === option.value ? "bg-primary text-primary-foreground" : "text-muted hover:text-primary-text"
+          }`}
+        >
+          {option.label}
+        </Link>
+      ))}
+    </nav>
   );
 }
 
