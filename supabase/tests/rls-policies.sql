@@ -19,7 +19,7 @@ declare
   adm uuid := gen_random_uuid();
   fresh uuid := gen_random_uuid();
   cand2 uuid := gen_random_uuid();
-  c1 uuid; c2 uuid; j_open uuid; j_closed uuid; s1 uuid; s2 uuid; app uuid; rep1 uuid; rep2 uuid;
+  c1 uuid; c2 uuid; j_open uuid; j_closed uuid; s1 uuid; s2 uuid; app uuid; rep1 uuid; rep2 uuid; ma1 uuid;
   n int; failed boolean; r text := '';
 begin
   -- Fixtures (as the database owner, no signed-in user)
@@ -51,6 +51,11 @@ begin
     (cand2, 1002, 'cand2-repo', 'https://github.com/t_cand2/cand2-repo') returning id into rep2;
   insert into public.candidate_skills (profile_id, skill_id, repository_id, source) values
     (cand, s1, rep1, 'language'), (cand2, s1, rep2, 'language');
+  -- Match analyses (#69): one for each candidate on the open job. Only cand applies (below).
+  insert into public.match_analyses (job_id, candidate_id, score, explanation, skills_fingerprint)
+    values (j_open, cand, 80, 'x', 'f1') returning id into ma1;
+  insert into public.match_analyses (job_id, candidate_id, score, explanation, skills_fingerprint)
+    values (j_open, cand2, 50, 'x', 'f2');
 
   -- ===== Signed out (anon) =====
   perform set_config('request.jwt.claims', '{"role":"anon"}', true);
@@ -67,6 +72,8 @@ begin
   r := r || case when n = 0 then E'\nPASS ' else E'\nFAIL ' end || 'anon cannot view repositories' || ' (' || n || ')';
   select count(*) into n from public.candidate_skills;
   r := r || case when n = 0 then E'\nPASS ' else E'\nFAIL ' end || 'anon cannot view candidate skills' || ' (' || n || ')';
+  select count(*) into n from public.match_analyses;
+  r := r || case when n = 0 then E'\nPASS ' else E'\nFAIL ' end || 'anon cannot view match analyses (' || n || ')';
   begin insert into public.skills (name, category) values ('anon skill', 'tool'); failed := false;
   exception when others then failed := true; end;
   r := r || case when failed then E'\nPASS ' else E'\nFAIL ' end || 'anon cannot add skills';
@@ -136,6 +143,16 @@ begin
   r := r || case when n = 0 then E'\nPASS ' else E'\nFAIL ' end || 'candidate cannot edit another candidate''s repository';
   delete from public.candidate_skills where profile_id = cand2; get diagnostics n = row_count;
   r := r || case when n = 0 then E'\nPASS ' else E'\nFAIL ' end || 'candidate cannot delete another candidate''s skills';
+  -- Match analyses (#69)
+  select count(*) into n from public.match_analyses where job_id = j_open;
+  r := r || case when n = 1 then E'\nPASS ' else E'\nFAIL ' end || 'candidate sees only own match analysis (' || n || ')';
+  begin insert into public.match_analyses (job_id, candidate_id, score, explanation, skills_fingerprint)
+    values (j_closed, cand, 100, 'fake', 'f'); failed := false;
+  exception when others then failed := true; end;
+  r := r || case when failed then E'\nPASS ' else E'\nFAIL ' end || 'candidate cannot create own match analysis';
+  begin update public.match_analyses set score = 100 where id = ma1; get diagnostics n = row_count; failed := n = 0;
+  exception when others then failed := true; end;
+  r := r || case when failed then E'\nPASS ' else E'\nFAIL ' end || 'candidate cannot change own match score';
   reset role;
 
   -- ===== Employer who owns the jobs =====
@@ -177,6 +194,13 @@ begin
   begin insert into public.repositories (profile_id, github_id, name, url) values (emp, 2001, 'emp-repo', 'https://github.com/t_emp/emp-repo'); failed := false;
   exception when others then failed := true; end;
   r := r || case when failed then E'\nPASS ' else E'\nFAIL ' end || 'employer cannot import repositories';
+  select count(*) into n from public.match_analyses where candidate_id = cand;
+  r := r || case when n = 1 then E'\nPASS ' else E'\nFAIL ' end || 'employer sees match analysis of own applicant (' || n || ')';
+  select count(*) into n from public.match_analyses where candidate_id = cand2;
+  r := r || case when n = 0 then E'\nPASS ' else E'\nFAIL ' end || 'employer cannot see match analysis of a non-applicant (' || n || ')';
+  begin update public.match_analyses set score = 0 where id = ma1; get diagnostics n = row_count; failed := n = 0;
+  exception when others then failed := true; end;
+  r := r || case when failed then E'\nPASS ' else E'\nFAIL ' end || 'employer cannot change a match score';
   reset role;
 
   -- ===== Another employer =====
@@ -195,6 +219,8 @@ begin
   r := r || case when failed then E'\nPASS ' else E'\nFAIL ' end || 'other employer cannot add skills to job';
   select count(*) into n from public.repositories where profile_id in (cand, cand2);
   r := r || case when n = 0 then E'\nPASS ' else E'\nFAIL ' end || 'other employer cannot see repositories of candidates who did not apply' || ' (' || n || ')';
+  select count(*) into n from public.match_analyses;
+  r := r || case when n = 0 then E'\nPASS ' else E'\nFAIL ' end || 'other employer cannot see match analyses for another company''s job (' || n || ')';
   reset role;
 
   -- ===== New user with no role yet =====
@@ -222,6 +248,8 @@ begin
   r := r || case when n = 0 then E'\nPASS ' else E'\nFAIL ' end || 'admin cannot edit company details';
   select count(*) into n from public.repositories where profile_id in (cand, cand2);
   r := r || case when n = 3 then E'\nPASS ' else E'\nFAIL ' end || 'admin sees all repositories' || ' (' || n || ')';
+  select count(*) into n from public.match_analyses where job_id = j_open;
+  r := r || case when n = 2 then E'\nPASS ' else E'\nFAIL ' end || 'admin sees all match analyses (' || n || ')';
   reset role;
 
   -- E'\n' (an escaped line break) works no matter how the file's own line breaks are saved.

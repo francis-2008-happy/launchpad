@@ -223,6 +223,63 @@ export type Database = {
           },
         ]
       }
+      match_analyses: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          explanation: string
+          gaps: Json
+          id: string
+          job_id: string
+          score: number
+          skills_fingerprint: string
+          strengths: Json
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          explanation: string
+          gaps?: Json
+          id?: string
+          job_id: string
+          score: number
+          skills_fingerprint: string
+          strengths?: Json
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          explanation?: string
+          gaps?: Json
+          id?: string
+          job_id?: string
+          score?: number
+          skills_fingerprint?: string
+          strengths?: Json
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_analyses_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_analyses_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
