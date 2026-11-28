@@ -3,19 +3,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { CompanyLogo } from "@/components/company-logo";
-import type { Database } from "@/types/database";
+import { STAGE_LABELS } from "@/lib/applications/stages";
 
 export const metadata: Metadata = { title: "My applications | LaunchPad" };
-
-type Stage = Database["public"]["Enums"]["application_stage"];
-
-const STAGE_LABELS: Record<Stage, string> = {
-  applied: "Applied",
-  reviewing: "Reviewing",
-  interviewing: "Interviewing",
-  offered: "Offered",
-  rejected: "Rejected",
-};
 
 const dateFormat = new Intl.DateTimeFormat("en-US", {
   month: "short",

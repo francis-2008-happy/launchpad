@@ -7,18 +7,20 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { Database } from "@/types/database";
 import { AiUnavailableError } from "@/lib/ai/gemini";
+import { isStage } from "@/lib/applications/stages";
 import { MatchError, analyzeMatch } from "@/lib/matching/analyze";
 
 export type AnalyzeApplicantState = { status: "idle" | "success" | "error"; message?: string };
 
 export type StageState = { status: "idle" | "success" | "error"; message?: string };
 
-export async function updateApplicantStage(
-  applicationId: string,
-  stage: Database["public"]["Enums"]["application_stage"],
-): Promise<StageState> {
+// Changes an application's stage (issue #75). Row Level Security only lets the
+// employer who owns the job do this, and only the stage column can change.
+export async function updateApplicantStage(applicationId: string, stage: unknown): Promise<StageState> {
+  // The stage comes from a form, so check it before it reaches the database.
+  if (!isStage(stage)) return { status: "error", message: "Choose a valid stage." };
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -32,13 +34,19 @@ export async function updateApplicantStage(
     .maybeSingle();
   if (!application) return { status: "error", message: "Application not found." };
 
-  const { error } = await supabase
+  // .select() returns the rows that changed. If Row Level Security blocks the
+  // update (the user doesn't own this job), no error comes back, just no rows.
+  const { data: updated, error } = await supabase
     .from("applications")
     .update({ stage })
-    .eq("id", applicationId);
+    .eq("id", applicationId)
+    .select("id");
   if (error) {
     console.error("Failed to update application stage:", error);
     return { status: "error", message: "We couldn't update the stage. Please try again." };
+  }
+  if (!updated || updated.length === 0) {
+    return { status: "error", message: "You can only change stages for your own jobs." };
   }
 
   revalidatePath(`/employer/jobs/${application.job_id}/applicants`);

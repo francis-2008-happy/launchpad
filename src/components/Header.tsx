@@ -26,21 +26,23 @@ async function UserNav() {
   let applicationCount = 0;
   let role: string | null = null;
   if (user) {
-    const [{ data: profile }, applications] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("full_name, github_username, role")
-        .eq("id", user.id)
-        .single(),
-      supabase
-        .from("applications")
-        .select("id", { count: "exact", head: true })
-        .eq("candidate_id", user.id),
-    ]);
-    
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, github_username, role")
+      .eq("id", user.id)
+      .single();
+
     displayName = profile?.full_name || profile?.github_username || user.email?.split("@")[0] || "User";
     role = profile?.role ?? null;
-    if (role === "candidate") applicationCount = applications.count ?? 0;
+
+    // Only candidates have applications, so only count them for candidates.
+    if (role === "candidate") {
+      const { count } = await supabase
+        .from("applications")
+        .select("id", { count: "exact", head: true })
+        .eq("candidate_id", user.id);
+      applicationCount = count ?? 0;
+    }
   }
 
   if (!user) {

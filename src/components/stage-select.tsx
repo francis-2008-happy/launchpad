@@ -2,25 +2,15 @@
 
 import { useActionState } from "react";
 import { updateApplicantStage, type StageState } from "@/app/employer/jobs/[id]/applicants/actions";
-import type { Database } from "@/types/database";
-
-type Stage = Database["public"]["Enums"]["application_stage"];
-
-const stages: Stage[] = ["applied", "reviewing", "interviewing", "offered", "rejected"];
-const labels: Record<Stage, string> = {
-  applied: "Applied",
-  reviewing: "Reviewing",
-  interviewing: "Interviewing",
-  offered: "Offered",
-  rejected: "Rejected",
-};
+import { STAGES, STAGE_LABELS, type Stage } from "@/lib/applications/stages";
 
 const initialState: StageState = { status: "idle" };
 
 export function StageSelect({ applicationId, stage }: { applicationId: string; stage: Stage }) {
   const [state, formAction, isPending] = useActionState(
     async (_previous: StageState, formData: FormData) => {
-      return updateApplicantStage(applicationId, formData.get("stage") as Stage);
+      // The server action checks that this is a valid stage.
+      return updateApplicantStage(applicationId, formData.get("stage"));
     },
     initialState,
   );
@@ -37,7 +27,7 @@ export function StageSelect({ applicationId, stage }: { applicationId: string; s
         className="min-h-11 rounded-xl border border-border bg-card px-3 text-sm font-semibold"
         data-testid="stage-select"
       >
-        {stages.map((value) => <option key={value} value={value}>{labels[value]}</option>)}
+        {STAGES.map((value) => <option key={value} value={value}>{STAGE_LABELS[value]}</option>)}
       </select>
       {state.status === "error" && <p role="alert" className="text-xs text-red-700">{state.message}</p>}
     </form>
