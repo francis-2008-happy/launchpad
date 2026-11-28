@@ -13,24 +13,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AnalyzeApplicantButton } from "@/components/analyze-applicant-button";
+import { StageSelect } from "@/components/stage-select";
 import { oneLine, parseSortOrder, sortApplicants, type SortOrder } from "@/lib/applicants/ranking";
 import { topSkillsByCandidate } from "@/lib/applicants/top-skills";
 import { matchLabel } from "@/lib/matching/label";
 import { createClient } from "@/lib/supabase/server";
-import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Applicants | LaunchPad",
-};
-
-type Stage = Database["public"]["Enums"]["application_stage"];
-
-const STAGE_LABELS: Record<Stage, string> = {
-  applied: "Applied",
-  reviewing: "Reviewing",
-  interviewing: "Interviewing",
-  offered: "Offered",
-  rejected: "Rejected",
 };
 
 const dateFormat = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
@@ -161,9 +151,7 @@ async function Applicants({ params, searchParams }: PageProps) {
                   </div>
 
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary-text">
-                      {STAGE_LABELS[stage]}
-                    </span>
+                    <StageSelect applicationId={applicationId} stage={stage} />
                     {/* Read-only skill profile from #74. */}
                     <Link
                       href={`/candidates/${candidate.id}`}

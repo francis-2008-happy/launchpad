@@ -19,19 +19,30 @@ const navLinks = [
 
 // This is just a helper inside this file to safely read the login status
 async function UserNav() {
-  
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   let displayName = "User";
+  let applicationCount = 0;
+  let role: string | null = null;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, github_username")
+      .select("full_name, github_username, role")
       .eq("id", user.id)
       .single();
-    
+
     displayName = profile?.full_name || profile?.github_username || user.email?.split("@")[0] || "User";
+    role = profile?.role ?? null;
+
+    // Only candidates have applications, so only count them for candidates.
+    if (role === "candidate") {
+      const { count } = await supabase
+        .from("applications")
+        .select("id", { count: "exact", head: true })
+        .eq("candidate_id", user.id);
+      applicationCount = count ?? 0;
+    }
   }
 
   if (!user) {
@@ -45,6 +56,14 @@ async function UserNav() {
   return (
     <>
       {/* Shown in the desktop header and in the mobile menu. */}
+      {role === "candidate" && (
+        <Link
+          href="/candidate/applications"
+          className="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-primary-text hover:bg-primary-soft"
+        >
+          Applications <span className="ml-1.5 rounded-full bg-primary-soft px-2 py-0.5 text-xs">{applicationCount}</span>
+        </Link>
+      )}
       <span className="max-w-40 truncate text-sm font-medium text-muted">Hi, {displayName}</span>
       <form action={signOut}>
         <button type="submit" className="inline-flex min-h-11 items-center rounded-lg border border-border bg-card px-4 text-sm font-semibold transition hover:border-primary/40 hover:bg-primary-soft">

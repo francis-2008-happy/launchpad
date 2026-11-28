@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { CompanyLogo } from "@/components/company-logo";
 import { MatchAnalysisPanel } from "@/components/match-analysis";
+import { ApplyButton } from "@/components/apply-button";
 import { getMatchAnalysis } from "@/lib/matching/analyze";
 
 export const metadata: Metadata = {
@@ -236,29 +237,7 @@ async function JobDetails({ params }: JobDetailsPageProps) {
         </div>
       </section>
 
-      {/* Apply button placeholder */}
-      <section className="rounded-2xl border border-border bg-card p-5 sm:p-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-xl font-bold">
-              Interested in this opportunity?
-            </h2>
-
-            <p className="mt-2 text-sm text-muted">
-              Take the next step toward your next career opportunity.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            disabled
-            aria-disabled="true"
-            className="min-h-12 w-full cursor-not-allowed rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground opacity-70 sm:w-auto"
-          >
-            Apply (Coming Soon)
-          </button>
-        </div>
-      </section>
+      <ApplySection jobId={job.id} />
 
     </div>
   );
@@ -292,6 +271,51 @@ async function MatchSection({ jobId }: { jobId: string }) {
 
   const saved = await getMatchAnalysis(jobId, user.id);
   return <MatchAnalysisPanel jobId={jobId} saved={saved} />;
+}
+
+async function ApplySection({ jobId }: { jobId: string }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <section className="rounded-2xl border border-border bg-card p-5 sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-bold">Interested in this opportunity?</h2>
+            <p className="mt-2 text-sm text-muted">Sign in as a candidate to submit your application.</p>
+          </div>
+          <Link href="/sign-in" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground sm:w-auto">
+            Sign in to apply
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "candidate") return null;
+
+  const { data: application } = await supabase
+    .from("applications")
+    .select("id")
+    .eq("job_id", jobId)
+    .eq("candidate_id", user.id)
+    .maybeSingle();
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5 sm:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold">Interested in this opportunity?</h2>
+          <p className="mt-2 text-sm text-muted">Take the next step toward your next career opportunity.</p>
+        </div>
+        <ApplyButton jobId={jobId} alreadyApplied={Boolean(application)} />
+      </div>
+    </section>
+  );
 }
 
 // Loading placeholder while job information is retrieved.

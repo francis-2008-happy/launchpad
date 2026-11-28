@@ -38,7 +38,7 @@ async function Dashboard() {
   } = await supabase.auth.getUser();
   if (!user) return null; // the proxy already sends signed-out visitors to sign in
 
-  const [{ data: profile }, { data: repos }, { data: evidence }] = await Promise.all([
+  const [{ data: profile }, { data: repos }, { data: evidence }, { count: applicationCount }] = await Promise.all([
     supabase.from("profiles").select("full_name, github_username, avatar_url").eq("id", user.id).single(),
     supabase
       .from("repositories")
@@ -49,6 +49,10 @@ async function Dashboard() {
       .from("candidate_skills")
       .select("source, skill:skills(name, category), repository:repositories(name, url)")
       .eq("profile_id", user.id),
+    supabase
+      .from("applications")
+      .select("id", { count: "exact", head: true })
+      .eq("candidate_id", user.id),
   ]);
 
   const repoList = repos ?? [];
@@ -84,7 +88,7 @@ async function Dashboard() {
       </section>
 
       {/* Numbers at a glance */}
-      <dl className="mt-8 grid grid-cols-3 gap-3 sm:gap-4">
+      <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {[
           { label: "Verified skills", value: topSkills.length },
           { label: "Repositories", value: repoList.length },
@@ -95,6 +99,10 @@ async function Dashboard() {
             <dd className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{stat.value}</dd>
           </div>
         ))}
+        <Link href="/candidate/applications" className="rounded-2xl border border-border bg-card p-4 transition hover:border-primary sm:p-5">
+          <dt className="text-xs font-semibold text-muted sm:text-sm">Applications</dt>
+          <dd className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{applicationCount ?? 0}</dd>
+        </Link>
       </dl>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1.5fr_1fr]">
